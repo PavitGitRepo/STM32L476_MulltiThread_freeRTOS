@@ -53,3 +53,87 @@ dkms.conf
 
 # debug information files
 *.dwo
+
+# ====================================================================
+# Compiled Object / Binary Files (Build Artifacts)
+# ====================================================================
+*.slo
+*.lo
+*.o
+*.obj
+*.su
+*.d
+
+# Compiled Dynamic & Static Libraries
+*.so
+*.dylib
+*.lai
+*.la
+*.a
+
+# Final Firmware & Debug Binaries
+*.bin
+*.elf
+*.hex
+*.map
+*.out
+
+# ====================================================================
+# Build Output Directories
+# ====================================================================
+Debug/
+Release/
+build/
+[Aa]utogen/
+
+# ====================================================================
+# STM32CubeIDE / Eclipse Specific Files
+# ====================================================================
+*.log
+.metadata/
+.recommenders/
+# Eclipse remote settings
+.remote
+# Keep workspace layout out of the repo
+.scrc
+# Automatically generated configuration files
+debug.config
+
+# OPTIONAL: Eclipse UI and target layout preferences. 
+# Uncomment if team members have different local UI preferences.
+# .settings/
+
+# OPTIONAL: Unique debug configuration launchers.
+# Uncomment if each developer maintains their own hardware debug configurations.
+# *.launch
+
+# ====================================================================
+# Hardware Debugger Outputs (ST-Link, J-Link, etc.)
+# ====================================================================
+*.jflash
+*.jlink
+# ST-Link trace files
+*.trace
+
+# ====================================================================
+# Toolchain / Editor Specifics (VS Code, CMake, CLion)
+# ====================================================================
+.vscode/
+.idea/
+.clang-format
+CMakeCache.txt
+CMakeFiles/
+CMakeUserPresets.json
+Makefile-cmake
+cmake_install.cmake
+
+# ====================================================================
+# System / OS Garbage Files
+# ====================================================================
+*.bak
+*.tmp
+*.swp
+*~
+.DS_Store
+Thumbs.db
+
