@@ -31,12 +31,13 @@ extern "C" {
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "stdio.h"
+#include <stdio.h>
+#include <stdint.h>
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/
 /* USER CODE BEGIN ET */
-
+#include "adxl345i2c.h"
 /* USER CODE END ET */
 
 /* Exported constants --------------------------------------------------------*/
@@ -46,14 +47,15 @@ extern "C" {
 
 /* Exported macro ------------------------------------------------------------*/
 /* USER CODE BEGIN EM */
-
+#define SUCCESS     0x00
+#define FAILURE    	0xFF
 /* USER CODE END EM */
 
 /* Exported functions prototypes ---------------------------------------------*/
 void Error_Handler(void);
 
 /* USER CODE BEGIN EFP */
-
+void send_string(const char *message);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/

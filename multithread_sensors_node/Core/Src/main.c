@@ -79,7 +79,7 @@ void check_cpu_health(void *argument);
 void i2c_read_write(void *argument);
 
 /* USER CODE BEGIN PFP */
-void send_string(const char *message);
+
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -339,6 +339,7 @@ void i2c_read_write(void *argument)
   /* USER CODE BEGIN i2c_read_write */
 	int ret = 0;
 	char buff[25];
+	uint8_t dev_id = 0;
   /* Infinite loop */
   for(;;)
   {
@@ -347,8 +348,8 @@ void i2c_read_write(void *argument)
 		ret = HAL_I2C_IsDeviceReady(&hi2c1,(uint16_t)(i<<1), 2, 5);
 		if(ret != 0)
 		{
-			sprintf(buff, " - ");
-			send_string(buff);
+//			sprintf(buff, " - ");
+//			send_string(buff);
 		}
 		else
 		{
@@ -358,7 +359,14 @@ void i2c_read_write(void *argument)
 		}
 	}
 
-	osDelay(1000);
+	dev_id = get_devid(ADXL345_ADDR);
+	if(dev_id != 0xFF)
+	{
+		sprintf(buff, "Device ID: 0x%02xh", dev_id);
+		send_string(buff);
+	}
+
+	osDelay(2000);
   }
   /* USER CODE END i2c_read_write */
 }
