@@ -54,7 +54,7 @@
     (#) Initialize the I2C registers by calling the HAL_I2C_Init(), configures also the low level Hardware
         (GPIO, CLOCK, NVIC...etc) by calling the customized HAL_I2C_MspInit(&hi2c) API.
 
-    (#) To check if target device is ready for communication, use the function HAL_I2C_IsDeviceReady()
+    (#) To check if target device is ready for communication, use the function ()
 
     (#) For I2C IO and IO MEM operations, three operation modes are available within this driver :
 
@@ -68,7 +68,7 @@
 
     *** Polling mode IO MEM operation ***
     =====================================
-    [..]
+    [..]HAL_I2C_IsDeviceReady
       (+) Write an amount of data in blocking mode to a specific memory address using HAL_I2C_Mem_Write()
       (+) Read an amount of data in blocking mode from a specific memory address using HAL_I2C_Mem_Read()
 

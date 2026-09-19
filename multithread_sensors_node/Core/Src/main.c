@@ -79,7 +79,7 @@ void check_cpu_health(void *argument);
 void i2c_read_write(void *argument);
 
 /* USER CODE BEGIN PFP */
-
+void send_string(const char *message);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -297,7 +297,15 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-
+void send_string(const char *message)
+{
+	while(*message)
+	{
+		ITM_SendChar(*message);
+		message++;
+	}
+	ITM_SendChar('\n');
+}
 /* USER CODE END 4 */
 
 /* USER CODE BEGIN Header_check_cpu_health */
@@ -313,7 +321,8 @@ void check_cpu_health(void *argument)
   /* Infinite loop */
   for(;;)
   {
-    osDelay(1);
+	send_string("CPU Health OK");
+    osDelay(1000);
   }
   /* USER CODE END 5 */
 }
@@ -328,10 +337,28 @@ void check_cpu_health(void *argument)
 void i2c_read_write(void *argument)
 {
   /* USER CODE BEGIN i2c_read_write */
+	int ret = 0;
+	char buff[25];
   /* Infinite loop */
   for(;;)
   {
-    osDelay(1);
+	for(int i = 0; i < 128; i++)
+	{
+		ret = HAL_I2C_IsDeviceReady(&hi2c1,(uint16_t)(i<<1), 2, 5);
+		if(ret != 0)
+		{
+			sprintf(buff, " - ");
+			send_string(buff);
+		}
+		else
+		{
+			sprintf(buff, "Device Address: 0x%02xh", i);
+			send_string(buff);
+			break;
+		}
+	}
+
+	osDelay(1000);
   }
   /* USER CODE END i2c_read_write */
 }
