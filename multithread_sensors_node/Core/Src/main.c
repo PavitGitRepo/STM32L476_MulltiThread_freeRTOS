@@ -342,11 +342,10 @@ void i2c_read_write(void *argument)
 
 	uint16_t x_axis, y_axis, z_axis;
 	float x_axis_g, y_axis_g,z_axis_g, x_angle, y_angle;
-	osStatus_t q_status;
 
 	osDelay(100);
 
-#if 1
+#if 0
 	//Finding a Device on I2C1 Bus
 	for(int i = 0; i < 128; i++)
 	{
@@ -371,6 +370,7 @@ void i2c_read_write(void *argument)
 	{
 		sprintf(buff, "Device ID: 0x%02xh", dev_id);
 		osMessageQueuePut (Debug_queueHandle, buff, 0, 100);
+
 	}
 
 	i2c_write_register(ADXL345_ADDR, POWER_CTL, 0x00);
