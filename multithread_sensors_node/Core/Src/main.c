@@ -342,15 +342,11 @@ void i2c_read_write(void *argument)
 
 	uint16_t x_axis, y_axis, z_axis;
 	float x_axis_g, y_axis_g,z_axis_g, x_angle, y_angle;
+	osStatus_t q_status;
 
 	osDelay(100);
 
-//	TT_ADXL_Read(0x00, 1);
-//	TT_ADXL_Write(0x2D, 0);
-//	TT_ADXL_Write(0x2D, 0x08);
-//	TT_ADXL_Write(0x31, 0x01);
-
-#if 0
+#if 1
 	//Finding a Device on I2C1 Bus
 	for(int i = 0; i < 128; i++)
 	{
@@ -361,9 +357,10 @@ void i2c_read_write(void *argument)
 		}
 		else
 		{
-			sprintf(buff, "Device Address: 0x%02xh", i);
-			send_string(buff);
-			break;
+			sprintf(buff, "Device Found at 0x%02xh", i);
+			q_status = osMessageQueuePut (Debug_queueHandle, buff, 0, 100);
+			if(q_status == osOK)
+				break;
 		}
 	}
 #endif
@@ -373,7 +370,7 @@ void i2c_read_write(void *argument)
 	if(dev_id != FAILURE)
 	{
 		sprintf(buff, "Device ID: 0x%02xh", dev_id);
-		send_string(buff);
+		osMessageQueuePut (Debug_queueHandle, buff, 0, 100);
 	}
 
 	i2c_write_register(ADXL345_ADDR, POWER_CTL, 0x00);
