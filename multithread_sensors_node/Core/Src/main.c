@@ -57,10 +57,10 @@ const osThreadAttr_t i2c_read_write__attributes = {
   .stack_size = 256 * 4,
   .priority = (osPriority_t) osPriorityNormal,
 };
-/* Definitions for i2c_gyro */
-osMessageQueueId_t i2c_gyroHandle;
-const osMessageQueueAttr_t i2c_gyro_attributes = {
-  .name = "i2c_gyro"
+/* Definitions for Debug_queue */
+osMessageQueueId_t Debug_queueHandle;
+const osMessageQueueAttr_t Debug_queue_attributes = {
+  .name = "Debug_queue"
 };
 /* Definitions for I2C1_bus */
 osMutexId_t I2C1_busHandle;
@@ -79,7 +79,7 @@ void check_cpu_health(void *argument);
 void i2c_read_write(void *argument);
 
 /* USER CODE BEGIN PFP */
-void send_string(const char *message);
+
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -140,8 +140,8 @@ int main(void)
   /* USER CODE END RTOS_TIMERS */
 
   /* Create the queue(s) */
-  /* creation of i2c_gyro */
-  i2c_gyroHandle = osMessageQueueNew (16, sizeof(uint16_t), &i2c_gyro_attributes);
+  /* creation of Debug_queue */
+  Debug_queueHandle = osMessageQueueNew (8, sizeof(uint8_t), &Debug_queue_attributes);
 
   /* USER CODE BEGIN RTOS_QUEUES */
   /* add queues, ... */
@@ -337,18 +337,27 @@ void check_cpu_health(void *argument)
 void i2c_read_write(void *argument)
 {
   /* USER CODE BEGIN i2c_read_write */
-	int ret = 0;
-	char buff[25];
-  /* Infinite loop */
-  for(;;)
-  {
+	char buff[50];
+	uint8_t dev_id = 0;
+
+	uint16_t x_axis, y_axis, z_axis;
+	float x_axis_g, y_axis_g,z_axis_g, x_angle, y_angle;
+
+	osDelay(100);
+
+//	TT_ADXL_Read(0x00, 1);
+//	TT_ADXL_Write(0x2D, 0);
+//	TT_ADXL_Write(0x2D, 0x08);
+//	TT_ADXL_Write(0x31, 0x01);
+
+#if 0
+	//Finding a Device on I2C1 Bus
 	for(int i = 0; i < 128; i++)
 	{
 		ret = HAL_I2C_IsDeviceReady(&hi2c1,(uint16_t)(i<<1), 2, 5);
 		if(ret != 0)
 		{
-			sprintf(buff, " - ");
-			send_string(buff);
+			//Device not Found!!
 		}
 		else
 		{
@@ -357,8 +366,46 @@ void i2c_read_write(void *argument)
 			break;
 		}
 	}
+#endif
 
-	osDelay(1000);
+	//Getting Device ID
+	dev_id = i2c_read_devid(ADXL345_ADDR);
+	if(dev_id != FAILURE)
+	{
+		sprintf(buff, "Device ID: 0x%02xh", dev_id);
+		send_string(buff);
+	}
+
+	i2c_write_register(ADXL345_ADDR, POWER_CTL, 0x00);
+	i2c_write_register(ADXL345_ADDR, POWER_CTL, 0x08);
+	i2c_write_register(ADXL345_ADDR, DATA_FORMAT, 0x01);
+
+
+  /* Infinite loop */
+  for(;;)
+  {
+
+	  x_axis = i2c_read_x_axis();
+	  y_axis = i2c_read_y_axis();
+	  z_axis = i2c_read_z_axis();
+
+	  x_axis_g = x_axis * .0078;
+	  y_axis_g = y_axis * .0078;
+	  z_axis_g = z_axis * .0078;
+	  sprintf(buff, "%.2f %.2f %.2f\n\r", x_axis_g, y_axis_g, z_axis_g);
+	  send_string(buff);
+
+	  x_angle = atan2(x_axis_g, z_axis_g);
+	  x_angle = x_angle * 180.0 / PI;
+
+	  y_angle = atan2(y_axis, z_axis);
+	  y_angle = y_angle * 180.0 / PI;
+
+	  sprintf(buff, "x_angle%.2f, y_angle%.2f", x_angle, y_angle);
+	  send_string(buff);
+
+
+	osDelay(2000);
   }
   /* USER CODE END i2c_read_write */
 }
