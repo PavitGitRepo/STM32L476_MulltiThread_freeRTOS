@@ -95,7 +95,7 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
-
+	char buff[15];
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -141,9 +141,14 @@ int main(void)
 
   /* Create the queue(s) */
   /* creation of Debug_queue */
-  Debug_queueHandle = osMessageQueueNew (8, sizeof(uint8_t), &Debug_queue_attributes);
+  Debug_queueHandle = osMessageQueueNew (8, sizeof(DebugMsg_t), &Debug_queue_attributes);
 
   /* USER CODE BEGIN RTOS_QUEUES */
+  if(Debug_queueHandle == NULL)
+  {
+	  sprintf(buff, "Queue Error");
+	  send_string(buff);
+  }
   /* add queues, ... */
   /* USER CODE END RTOS_QUEUES */
 
@@ -318,11 +323,15 @@ void send_string(const char *message)
 void check_cpu_health(void *argument)
 {
   /* USER CODE BEGIN 5 */
-  /* Infinite loop */
+  DebugMsg_t rxMsg; // Allocate actual space on the stack
+
   for(;;)
   {
-	send_string("CPU Health OK");
-    osDelay(1000);
+    // Pass the address of the struct container
+    if(osMessageQueueGet(Debug_queueHandle, &rxMsg, NULL, osWaitForever) == osOK)
+    {
+        send_string(rxMsg.text); // Pass the inner string to your ITM function
+    }
   }
   /* USER CODE END 5 */
 }
@@ -337,27 +346,25 @@ void check_cpu_health(void *argument)
 void i2c_read_write(void *argument)
 {
   /* USER CODE BEGIN i2c_read_write */
-	char buff[50];
+	DebugMsg_t txMsg;
 	uint8_t dev_id = 0;
-
 	uint16_t x_axis, y_axis, z_axis;
 	float x_axis_g, y_axis_g,z_axis_g, x_angle, y_angle;
+	osStatus_t q_status;
 
 	osDelay(100);
 
-#if 0
-	//Finding a Device on I2C1 Bus
+#if 1
+	// Finding a Device on I2C1 Bus
 	for(int i = 0; i < 128; i++)
 	{
-		ret = HAL_I2C_IsDeviceReady(&hi2c1,(uint16_t)(i<<1), 2, 5);
-		if(ret != 0)
+		if(HAL_I2C_IsDeviceReady(&hi2c1,(uint16_t)(i<<1), 2, 5) == 0)
 		{
-			//Device not Found!!
-		}
-		else
-		{
-			sprintf(buff, "Device Found at 0x%02xh", i);
-			q_status = osMessageQueuePut (Debug_queueHandle, buff, 0, 100);
+			// Safe print directly into the struct's text array
+			snprintf(txMsg.text, sizeof(txMsg.text), "Device Found 0x%02xh", i);
+
+			// The queue copies all 32 bytes of txMsg safely by value
+			q_status = osMessageQueuePut(Debug_queueHandle, &txMsg, 0, 100);
 			if(q_status == osOK)
 				break;
 		}
@@ -368,9 +375,8 @@ void i2c_read_write(void *argument)
 	dev_id = i2c_read_devid(ADXL345_ADDR);
 	if(dev_id != FAILURE)
 	{
-		sprintf(buff, "Device ID: 0x%02xh", dev_id);
-		osMessageQueuePut (Debug_queueHandle, buff, 0, 100);
-
+		snprintf(txMsg.text, sizeof(txMsg.text), "Device ID: 0x%02xh", dev_id);
+		osMessageQueuePut(Debug_queueHandle, &txMsg, 0, 100);
 	}
 
 	i2c_write_register(ADXL345_ADDR, POWER_CTL, 0x00);
@@ -389,8 +395,9 @@ void i2c_read_write(void *argument)
 	  x_axis_g = x_axis * .0078;
 	  y_axis_g = y_axis * .0078;
 	  z_axis_g = z_axis * .0078;
-	  sprintf(buff, "%.2f %.2f %.2f\n\r", x_axis_g, y_axis_g, z_axis_g);
-	  send_string(buff);
+
+	  snprintf(txMsg.text, sizeof(txMsg.text), "%.2f %.2f %.2f\n\r", x_axis_g, y_axis_g, z_axis_g);
+	  osMessageQueuePut(Debug_queueHandle, &txMsg, 0, 100);
 
 	  x_angle = atan2(x_axis_g, z_axis_g);
 	  x_angle = x_angle * 180.0 / PI;
@@ -398,11 +405,10 @@ void i2c_read_write(void *argument)
 	  y_angle = atan2(y_axis, z_axis);
 	  y_angle = y_angle * 180.0 / PI;
 
-	  sprintf(buff, "x_angle%.2f, y_angle%.2f", x_angle, y_angle);
-	  send_string(buff);
+	  snprintf(txMsg.text, sizeof(txMsg.text), "x_angle%.2f, y_angle%.2f", x_angle, y_angle);
+	  osMessageQueuePut(Debug_queueHandle, &txMsg, 0, 100);
 
-
-	osDelay(2000);
+	osDelay(500);
   }
   /* USER CODE END i2c_read_write */
 }

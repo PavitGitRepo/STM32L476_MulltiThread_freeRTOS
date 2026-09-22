@@ -61,6 +61,9 @@ void send_string(const char *message);
 /* Private defines -----------------------------------------------------------*/
 
 /* USER CODE BEGIN Private defines */
+typedef struct {
+    char text[32]; // Fixed size large enough for "Device Found 0x%02xh" or your floats
+} DebugMsg_t;
 
 /* USER CODE END Private defines */
 
