@@ -118,7 +118,7 @@ int main(void)
   MX_GPIO_Init();
   MX_I2C1_Init();
   /* USER CODE BEGIN 2 */
-
+  HAL_Delay(100);
   /* USER CODE END 2 */
 
   /* Init scheduler */
@@ -352,8 +352,6 @@ void i2c_read_write(void *argument)
 	float x_axis_g, y_axis_g,z_axis_g, x_angle, y_angle;
 	osStatus_t q_status;
 
-	osDelay(100);
-
 #if 1
 	// Finding a Device on I2C1 Bus
 	for(int i = 0; i < 128; i++)
@@ -383,6 +381,7 @@ void i2c_read_write(void *argument)
 	i2c_write_register(ADXL345_ADDR, POWER_CTL, 0x08);
 	i2c_write_register(ADXL345_ADDR, DATA_FORMAT, 0x01);
 
+	osDelay(100);
 
   /* Infinite loop */
   for(;;)
