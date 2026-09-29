@@ -38,6 +38,7 @@ extern "C" {
 /* Exported types ------------------------------------------------------------*/
 /* USER CODE BEGIN ET */
 #include "adxl345i2c.h"
+#include "th_dht11.h"
 /* USER CODE END ET */
 
 /* Exported constants --------------------------------------------------------*/
