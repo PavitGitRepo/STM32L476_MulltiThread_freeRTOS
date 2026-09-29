@@ -43,10 +43,12 @@
 /* Private variables ---------------------------------------------------------*/
 I2C_HandleTypeDef hi2c1;
 
-/* Definitions for cpu_health_task */
-osThreadId_t cpu_health_taskHandle;
-const osThreadAttr_t cpu_health_task_attributes = {
-  .name = "cpu_health_task",
+TIM_HandleTypeDef htim2;
+
+/* Definitions for health_debug_ta */
+osThreadId_t health_debug_taHandle;
+const osThreadAttr_t health_debug_ta_attributes = {
+  .name = "health_debug_ta",
   .stack_size = 128 * 4,
   .priority = (osPriority_t) osPriorityNormal,
 };
@@ -57,10 +59,17 @@ const osThreadAttr_t i2c_read_write__attributes = {
   .stack_size = 256 * 4,
   .priority = (osPriority_t) osPriorityNormal,
 };
-/* Definitions for Debug_queue */
-osMessageQueueId_t Debug_queueHandle;
-const osMessageQueueAttr_t Debug_queue_attributes = {
-  .name = "Debug_queue"
+/* Definitions for DHT11_TH_Sensor */
+osThreadId_t DHT11_TH_SensorHandle;
+const osThreadAttr_t DHT11_TH_Sensor_attributes = {
+  .name = "DHT11_TH_Sensor",
+  .stack_size = 256 * 4,
+  .priority = (osPriority_t) osPriorityNormal1,
+};
+/* Definitions for i2c_gyro */
+osMessageQueueId_t i2c_gyroHandle;
+const osMessageQueueAttr_t i2c_gyro_attributes = {
+  .name = "i2c_gyro"
 };
 /* Definitions for I2C1_bus */
 osMutexId_t I2C1_busHandle;
@@ -75,11 +84,13 @@ const osMutexAttr_t I2C1_bus_attributes = {
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_I2C1_Init(void);
+static void MX_TIM2_Init(void);
 void check_cpu_health(void *argument);
 void i2c_read_write(void *argument);
+void dht11_rw(void *argument);
 
 /* USER CODE BEGIN PFP */
-
+dht11_t dht;
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -117,7 +128,12 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_I2C1_Init();
+  MX_TIM2_Init();
   /* USER CODE BEGIN 2 */
+
+  init_dht11(&dht, &htim2, GPIOA, GPIO_PIN_8);
+
+
   HAL_Delay(100);
   /* USER CODE END 2 */
 
@@ -140,11 +156,11 @@ int main(void)
   /* USER CODE END RTOS_TIMERS */
 
   /* Create the queue(s) */
-  /* creation of Debug_queue */
-  Debug_queueHandle = osMessageQueueNew (8, sizeof(DebugMsg_t), &Debug_queue_attributes);
+  /* creation of i2c_gyro */
+  i2c_gyroHandle = osMessageQueueNew (8, sizeof(DebugMsg_t), &i2c_gyro_attributes);
 
   /* USER CODE BEGIN RTOS_QUEUES */
-  if(Debug_queueHandle == NULL)
+  if(i2c_gyroHandle == NULL)
   {
 	  sprintf(buff, "Queue Error");
 	  send_string(buff);
@@ -153,11 +169,14 @@ int main(void)
   /* USER CODE END RTOS_QUEUES */
 
   /* Create the thread(s) */
-  /* creation of cpu_health_task */
-  cpu_health_taskHandle = osThreadNew(check_cpu_health, NULL, &cpu_health_task_attributes);
+  /* creation of health_debug_ta */
+  health_debug_taHandle = osThreadNew(check_cpu_health, NULL, &health_debug_ta_attributes);
 
   /* creation of i2c_read_write_ */
-  i2c_read_write_Handle = osThreadNew(i2c_read_write, NULL, &i2c_read_write__attributes);
+//  i2c_read_write_Handle = osThreadNew(i2c_read_write, NULL, &i2c_read_write__attributes);
+
+  /* creation of DHT11_TH_Sensor */
+  DHT11_TH_SensorHandle = osThreadNew(dht11_rw, NULL, &DHT11_TH_Sensor_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -282,12 +301,58 @@ static void MX_I2C1_Init(void)
 }
 
 /**
+  * @brief TIM2 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM2_Init(void)
+{
+
+  /* USER CODE BEGIN TIM2_Init 0 */
+
+  /* USER CODE END TIM2_Init 0 */
+
+  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+
+  /* USER CODE BEGIN TIM2_Init 1 */
+
+  /* USER CODE END TIM2_Init 1 */
+  htim2.Instance = TIM2;
+  htim2.Init.Prescaler = 80-1;
+  htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim2.Init.Period = 65535-1;
+  htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
+  if (HAL_TIM_Base_Init(&htim2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim2, &sClockSourceConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim2, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM2_Init 2 */
+
+  /* USER CODE END TIM2_Init 2 */
+
+}
+
+/**
   * @brief GPIO Initialization Function
   * @param None
   * @retval None
   */
 static void MX_GPIO_Init(void)
 {
+  GPIO_InitTypeDef GPIO_InitStruct = {0};
   /* USER CODE BEGIN MX_GPIO_Init_1 */
 
   /* USER CODE END MX_GPIO_Init_1 */
@@ -295,6 +360,12 @@ static void MX_GPIO_Init(void)
   /* GPIO Ports Clock Enable */
   __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
+
+  /*Configure GPIO pin : PA2 */
+  GPIO_InitStruct.Pin = GPIO_PIN_2;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   /* USER CODE BEGIN MX_GPIO_Init_2 */
 
@@ -328,9 +399,13 @@ void check_cpu_health(void *argument)
   for(;;)
   {
     // Pass the address of the struct container
-    if(osMessageQueueGet(Debug_queueHandle, &rxMsg, NULL, osWaitForever) == osOK)
+    if(osMessageQueueGet(i2c_gyroHandle, &rxMsg, NULL, 2000) == osOK)
     {
         send_string(rxMsg.text); // Pass the inner string to your ITM function
+    }
+    else
+    {
+    	send_string("CPU Health OK..");
     }
   }
   /* USER CODE END 5 */
@@ -362,7 +437,7 @@ void i2c_read_write(void *argument)
 			snprintf(txMsg.text, sizeof(txMsg.text), "Device Found 0x%02xh", i);
 
 			// The queue copies all 32 bytes of txMsg safely by value
-			q_status = osMessageQueuePut(Debug_queueHandle, &txMsg, 0, 100);
+			q_status = osMessageQueuePut(i2c_gyroHandle, &txMsg, 0, 100);
 			if(q_status == osOK)
 				break;
 		}
@@ -374,7 +449,7 @@ void i2c_read_write(void *argument)
 	if(dev_id != FAILURE)
 	{
 		snprintf(txMsg.text, sizeof(txMsg.text), "Device ID: 0x%02xh", dev_id);
-		osMessageQueuePut(Debug_queueHandle, &txMsg, 0, 100);
+		osMessageQueuePut(i2c_gyroHandle, &txMsg, 0, 100);
 	}
 
 	i2c_write_register(ADXL345_ADDR, POWER_CTL, 0x00);
@@ -396,7 +471,7 @@ void i2c_read_write(void *argument)
 	  z_axis_g = z_axis * .0078;
 
 	  snprintf(txMsg.text, sizeof(txMsg.text), "%.2f %.2f %.2f\n\r", x_axis_g, y_axis_g, z_axis_g);
-	  osMessageQueuePut(Debug_queueHandle, &txMsg, 0, 100);
+	  osMessageQueuePut(i2c_gyroHandle, &txMsg, 0, 100);
 
 	  x_angle = atan2(x_axis_g, z_axis_g);
 	  x_angle = x_angle * 180.0 / PI;
@@ -405,11 +480,41 @@ void i2c_read_write(void *argument)
 	  y_angle = y_angle * 180.0 / PI;
 
 	  snprintf(txMsg.text, sizeof(txMsg.text), "x_angle%.2f, y_angle%.2f", x_angle, y_angle);
-	  osMessageQueuePut(Debug_queueHandle, &txMsg, 0, 100);
+	  osMessageQueuePut(i2c_gyroHandle, &txMsg, 0, 100);
 
 	osDelay(500);
   }
   /* USER CODE END i2c_read_write */
+}
+
+/* USER CODE BEGIN Header_dht11_rw */
+/**
+* @brief Function implementing the DHT11_TH_Sensor thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_dht11_rw */
+void dht11_rw(void *argument)
+{
+  /* USER CODE BEGIN dht11_rw */
+	DebugMsg_t txMsg;
+  /* Infinite loop */
+  for(;;)
+  {
+	  if(readDHT11(&dht) == 0)
+	  {
+		  snprintf(txMsg.text, sizeof(txMsg.text), "Error in %s...", __func__);
+		  osMessageQueuePut(i2c_gyroHandle, &txMsg, 0, 100);
+	  }
+	  else
+	  {
+		  snprintf(txMsg.text, sizeof(txMsg.text), "T: %d, H: %d", dht.temperature, dht.humidty);
+		  osMessageQueuePut(i2c_gyroHandle, &txMsg, 0, 100);
+	  }
+
+    osDelay(500);
+  }
+  /* USER CODE END dht11_rw */
 }
 
 /**
