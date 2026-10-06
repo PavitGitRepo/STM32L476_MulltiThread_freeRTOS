@@ -12,7 +12,7 @@
  * @brief configure dht11 struct with given parameter
  * @param htim TIMER for calculate delays ex:&htim2
  * @param port GPIO port ex:GPIOA
- * @param pin GPIO pin ex:GPIO_PIN_2
+ * @param pin GPIO pin ex:GPIO_PIN_8
  * @param dht struct to configure ex:&dht
  */
 void init_dht11(dht11_t *dht, TIM_HandleTypeDef *htim, GPIO_TypeDef* port, uint16_t pin){

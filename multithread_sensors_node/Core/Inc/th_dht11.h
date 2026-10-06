@@ -16,7 +16,7 @@
  */
 struct _dht11_t{
 	GPIO_TypeDef* port;	///GPIO Port ex:GPIOA
-	uint16_t pin; ///GPIO pin ex:GPIO_PIN_2
+	uint16_t pin; ///GPIO pin ex:GPIO_PIN_8
 	TIM_HandleTypeDef *htim; /// timer for measure time ex:htim3
 	uint8_t temperature; ///Temperature value
 	uint8_t humidty; ///humidity value
